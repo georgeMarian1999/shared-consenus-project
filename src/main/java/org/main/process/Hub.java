@@ -13,8 +13,7 @@ public class Hub {
     public Hub(String address, int port) {
         this.address = address;
         this.port = port;
-        this.processId = CommunicationProtocol.ProcessId
-                .newBuilder()
+        this.processId = CommunicationProtocol.ProcessId.newBuilder()
                 .setHost(address)
                 .setPort(port)
                 .setOwner("hub")

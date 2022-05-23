@@ -12,7 +12,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class TCPListener implements Runnable {
+public class  TCPListener implements Runnable {
 
     final static Logger logger = Logger.getLogger(String.valueOf(TCPListener.class));
 
@@ -37,7 +37,7 @@ public class TCPListener implements Runnable {
                     if (innerMessage.getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REPLY
                         && innerMessage.getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REQUEST
                     )
-                        logger.info(String.format("%s%s received from %s:%s message %s \n", Thread.currentThread().getName(), networkMessage.getSenderHost(), networkMessage.getSenderListeningPort(), networkMessage.getMessage().getType()));
+                        logger.info(String.format("%s received from %s:%s message %s \n", Thread.currentThread().getName(), networkMessage.getSenderHost(), networkMessage.getSenderListeningPort(), networkMessage.getMessage().getType()));
 
                     processMessage(innerMessage);
                 } catch (Exception ex) {

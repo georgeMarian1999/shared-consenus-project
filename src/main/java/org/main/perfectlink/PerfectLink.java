@@ -18,7 +18,6 @@ public class PerfectLink extends Abstraction {
         super(abstractionId, system);
     }
 
-
     @Override
     public String handleMessage(CommunicationProtocol.Message message) throws IOException {
         if(!abstractionId.equals(message.getToAbstractionId())) {
@@ -32,16 +31,15 @@ public class PerfectLink extends Abstraction {
                 }
                 deliverNetworkMessage(message);
                 return "Message handled. Case NETWORK_MESSAGE";
-            case PL_DELIVER:
+            case PL_SEND:
                 if (message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REQUEST
                         && message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REPLY) {
                     logger.info(String.format("%s%s: %s from %s to %s\n", Thread.currentThread().getName(), message.getType(), message.getFromAbstractionId(), message.getToAbstractionId()));
                 }
                 sendNetworkMessage(message);
                 return "Message handled. Case PL_DELIVER";
-            default:
-                return "Unsupported message";
         }
+        return "Unsupported message";
     }
 
     private void sendNetworkMessage(CommunicationProtocol.Message message) throws IOException {
@@ -56,8 +54,8 @@ public class PerfectLink extends Abstraction {
 
         CommunicationProtocol.Message forwardMessage = CommunicationProtocol.Message.newBuilder()
                 .setType(CommunicationProtocol.Message.Type.NETWORK_MESSAGE)
-                .setMessageUuid(String.valueOf(UUID.randomUUID()))
                 .setNetworkMessage(networkMessage)
+                .setMessageUuid(String.valueOf(UUID.randomUUID()))
                 .setToAbstractionId(abstractionId)
                 .setFromAbstractionId(abstractionId)
                 .setSystemId(system.getId())

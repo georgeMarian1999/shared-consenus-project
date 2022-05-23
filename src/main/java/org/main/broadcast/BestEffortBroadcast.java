@@ -8,9 +8,11 @@ import org.main.utilities.Utilities;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class BestEffortBroadcast extends Abstraction {
 
+    static final Logger logger = Logger.getLogger(String.valueOf(BestEffortBroadcast.class));
 
     public BestEffortBroadcast(String abstractionId, ApplicationSystem system) {
         super(abstractionId, system);
@@ -33,9 +35,10 @@ public class BestEffortBroadcast extends Abstraction {
     private void sendToAll(CommunicationProtocol.Message message) {
         CommunicationProtocol.Message innerMessage = message.getBebBroadcast().getMessage();
         List<CommunicationProtocol.ProcessId> processIds = system.getProcessIds();
-
+        logger.info("Beb sending to all");
         for (CommunicationProtocol.ProcessId process: processIds
              ) {
+            logger.info(String.format("Abstraction %s sending to process %s-%s", abstractionId, process.getOwner(), process.getIndex()));
             CommunicationProtocol.PlSend plSend = CommunicationProtocol.PlSend.newBuilder()
                     .setDestination(process)
                     .setMessage(innerMessage)
