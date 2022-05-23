@@ -1,18 +1,22 @@
 package org.main.application;
 
+import org.main.abstraction.Abstraction;
 import org.main.projectbase.CommunicationProtocol;
+import org.main.system.ApplicationSystem;
+import org.main.utilities.Utilities;
 
+import java.io.IOException;
 import java.util.Queue;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class App {
+public class App extends Abstraction {
 
-    private Queue<CommunicationProtocol.Message> messageQueue;
+    static final Logger logger = Logger.getLogger(String.valueOf(App.class));
 
-
-    public App(Queue<CommunicationProtocol.Message> messageQueue) {
-        this.messageQueue = messageQueue;
+    public App(String abstractionId, ApplicationSystem system) {
+        super(abstractionId, system);
     }
 
     public String getRegister(String value) {
@@ -22,8 +26,13 @@ public class App {
         return matcher.toString();
     }
 
-    public void Handle(CommunicationProtocol.Message message) throws Exception {
+    @Override
+    public String handleMessage(CommunicationProtocol.Message message) throws IOException {
         CommunicationProtocol.Message messageToSend = null;
+
+        if(!abstractionId.equals(message.getToAbstractionId())) {
+            return "Unsupported abstraction for this message";
+        }
 
         switch (message.getType()) {
             case PL_DELIVER:
@@ -44,7 +53,7 @@ public class App {
                                                 .build())
                                         .build())
                                 .build();
-                        break;
+                        return "Message handled App broadcast";
                     case APP_VALUE:
                         messageToSend = CommunicationProtocol.Message.newBuilder()
                                 .setType(CommunicationProtocol.Message.Type.PL_SEND)
@@ -57,7 +66,7 @@ public class App {
                                                 .build())
                                         .build())
                                 .build();
-                        break;
+                        return "Message handled App value";
                     case APP_WRITE:
                         messageToSend = CommunicationProtocol.Message.newBuilder()
                                 .setType(CommunicationProtocol.Message.Type.NNAR_WRITE)
@@ -67,7 +76,7 @@ public class App {
                                         .setValue(message.getPlDeliver().getMessage().getAppWrite().getValue())
                                         .build())
                                 .build();
-                        break;
+                        return "Message handled App write";
                     case APP_READ:
                         messageToSend = CommunicationProtocol.Message.newBuilder()
                                 .setType(CommunicationProtocol.Message.Type.NNAR_READ)
@@ -76,11 +85,10 @@ public class App {
                                 .setNnarRead(CommunicationProtocol.NnarRead.newBuilder()
                                         .build())
                                 .build();
-                        break;
+                        return "Message handled App broadcast";
                     default:
-                        throw new Exception("Message not supported");
+                        throw new IOException("Message not supported");
                 }
-                break;
             case BEB_DELIVER:
                 messageToSend = CommunicationProtocol.Message.newBuilder()
                         .setType(CommunicationProtocol.Message.Type.PL_SEND)
@@ -93,7 +101,7 @@ public class App {
                                         .build())
                                 .build())
                         .build();
-                break;
+                return "Message handled App beb_deliver";
             case NNAR_WRITE_RETURN:
                 messageToSend = CommunicationProtocol.Message.newBuilder()
                         .setType(CommunicationProtocol.Message.Type.PL_SEND)
@@ -108,7 +116,7 @@ public class App {
                                         .build())
                                 .build())
                         .build();
-                break;
+                return "Message handled App NNAR_WRITE_RETURN";
             case NNAR_READ_RETURN:
                 messageToSend = CommunicationProtocol.Message.newBuilder()
                         .setType(CommunicationProtocol.Message.Type.PL_SEND)
@@ -124,14 +132,13 @@ public class App {
                                         .build())
                                 .build())
                         .build();
-                break;
-            default:
-                throw new Exception("Message not supported");
-        }
+                return "Message handled App broadcast";
 
-        if (messageToSend != null){
-            messageQueue.add(messageToSend);
         }
+        return "Unsupported message";
+    }
+
+    private void APP_BROADCAST(CommunicationProtocol.Message message) {
 
     }
 }

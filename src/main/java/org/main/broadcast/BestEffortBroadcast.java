@@ -1,81 +1,83 @@
 package org.main.broadcast;
 
+import org.main.abstraction.Abstraction;
 import org.main.projectbase.CommunicationProtocol;
+import org.main.system.ApplicationSystem;
+import org.main.utilities.Utilities;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.Queue;
+import java.util.UUID;
 
-public class BestEffortBroadcast {
+public class BestEffortBroadcast extends Abstraction {
 
-    private Queue<CommunicationProtocol.Message> messageQueue;
-    private List<CommunicationProtocol.ProcessId> processes;
-    private String id;
 
-    public BestEffortBroadcast(Queue<CommunicationProtocol.Message> messageQueue, List<CommunicationProtocol.ProcessId> processes, String id) {
-        this.messageQueue = messageQueue;
-        this.processes = processes;
-        this.id = id;
+    public BestEffortBroadcast(String abstractionId, ApplicationSystem system) {
+        super(abstractionId, system);
     }
 
-    public Queue<CommunicationProtocol.Message> getMessageQueue() {
-        return messageQueue;
-    }
-
-    public void setMessageQueue(Queue<CommunicationProtocol.Message> messageQueue) {
-        this.messageQueue = messageQueue;
-    }
-
-    public List<CommunicationProtocol.ProcessId> getProcesses() {
-        return processes;
-    }
-
-    public void setProcesses(List<CommunicationProtocol.ProcessId> processes) {
-        this.processes = processes;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-
-    public void Handle(CommunicationProtocol.Message message) throws Exception {
-
+    @Override
+    public String handleMessage(CommunicationProtocol.Message message) throws IOException {
         switch (message.getType()) {
             case BEB_BROADCAST:
-                for (CommunicationProtocol.ProcessId process: this.processes) {
-                    CommunicationProtocol.Message messageToSend = CommunicationProtocol.Message.newBuilder()
-                            .setType(CommunicationProtocol.Message.Type.PL_SEND)
-                            .setFromAbstractionId(this.id)
-                            .setToAbstractionId(this.id + ".pl")
-                            .setPlSend(CommunicationProtocol.PlSend.newBuilder()
-                                            .setDestination(process)
-                                            .setMessage(message.getBebBroadcast().getMessage())
-                                            .build()
-                                      )
-                            .build();
-                    messageQueue.add(messageToSend);
-                }
-                break;
+                sendToAll(message);
+                return "Beb processed message. BEB_BROADCAST";
             case PL_DELIVER:
-                CommunicationProtocol.Message messageToSend = CommunicationProtocol.Message.newBuilder()
-                        .setType(CommunicationProtocol.Message.Type.BEB_DELIVER)
-                        .setFromAbstractionId(this.id)
-                        .setToAbstractionId(message.getPlDeliver().getMessage().getToAbstractionId())
-                        .setBebDeliver(
-                                CommunicationProtocol.BebDeliver.newBuilder()
-                                        .setSender(message.getPlDeliver().getSender())
-                                        .setMessage(message.getPlDeliver().getMessage())
-                                        .build()
-                        )
-                        .build();
-                messageQueue.add(messageToSend);
-                break;
+                plBebDeliver(message);
+                return "Beb processed message. PL_DELIVER";
             default:
-                throw new Exception("Message not supported");
+                return "Beb message not supported";
         }
+    }
+
+    private void sendToAll(CommunicationProtocol.Message message) {
+        CommunicationProtocol.Message innerMessage = message.getBebBroadcast().getMessage();
+        List<CommunicationProtocol.ProcessId> processIds = system.getProcessIds();
+
+        for (CommunicationProtocol.ProcessId process: processIds
+             ) {
+            CommunicationProtocol.PlSend plSend = CommunicationProtocol.PlSend.newBuilder()
+                    .setDestination(process)
+                    .setMessage(innerMessage)
+                    .build();
+            CommunicationProtocol.Message messageToSend = CommunicationProtocol.Message.newBuilder()
+                    .setType(CommunicationProtocol.Message.Type.PL_SEND)
+                    .setPlSend(plSend)
+                    .setMessageUuid(String.valueOf(UUID.randomUUID()))
+                    .setFromAbstractionId(this.abstractionId)
+                    .setToAbstractionId(this.abstractionId + ".pl")
+                    .setSystemId(system.getId())
+                    .build();
+
+            system.addMessage(messageToSend);
+        }
+    }
+
+    private void plBebDeliver(CommunicationProtocol.Message message) {
+        CommunicationProtocol.Message innerMessage = message.getPlDeliver().getMessage();
+        CommunicationProtocol.BebDeliver bebDeliver;
+        if (message.getPlDeliver().getSender() != null) {
+            bebDeliver = CommunicationProtocol.BebDeliver.newBuilder()
+                    .setSender(message.getPlDeliver().getSender())
+                    .setMessage(innerMessage)
+                    .build();
+        }
+        else  {
+            bebDeliver = CommunicationProtocol.BebDeliver.newBuilder()
+                    .setMessage(innerMessage)
+                    .build();
+        }
+
+        CommunicationProtocol.Message messageToSend = CommunicationProtocol.Message.newBuilder()
+                .setType(CommunicationProtocol.Message.Type.BEB_DELIVER)
+                .setBebDeliver(bebDeliver)
+                .setToAbstractionId(Utilities.getParentAbstraction(message.getToAbstractionId()))
+                .setFromAbstractionId(this.abstractionId)
+                .setMessageUuid(String.valueOf(UUID.randomUUID()))
+                .setToAbstractionId(innerMessage.getToAbstractionId())
+                .setSystemId(system.getId())
+                .build();
+
+        system.addMessage(messageToSend);
     }
 }
