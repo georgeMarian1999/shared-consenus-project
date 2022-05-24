@@ -47,7 +47,7 @@ public class Process implements Runnable{
             tcpListenerThread.start();
             tcpListenerThread.join();
         } catch (IOException | InterruptedException exception) {
-            // logger.info(String.format("Process % run error: %s", Thread.currentThread().getName(), exception.getMessage()));
+            logger.info(String.format("Process %s run error: %s", Thread.currentThread().getName(), exception.getMessage()));
             exception.printStackTrace();
         }
     }

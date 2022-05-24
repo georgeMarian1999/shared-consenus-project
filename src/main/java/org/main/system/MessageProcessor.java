@@ -2,6 +2,7 @@ package org.main.system;
 
 import org.main.abstraction.Abstraction;
 import org.main.projectbase.CommunicationProtocol;
+import org.main.register.Register;
 import org.main.utilities.Utilities;
 
 import java.io.IOException;
@@ -28,36 +29,36 @@ public class MessageProcessor implements Runnable {
 
     @Override
     public void run() {
-        boolean running = true;
-        while (running) {
+
+        while (true) {
             try {
                 CommunicationProtocol.Message messageToHandle = system.getMessage();
                 CommunicationProtocol.Message innerMessage = messageToHandle.getNetworkMessage().getMessage();
 
                 if (innerMessage.getType() == CommunicationProtocol.Message.Type.PROC_DESTROY_SYSTEM) {
                     logger.info(String.format("%s destroyed system", Thread.currentThread().getName()));
-                    running = false;
                     break;
                 }
 
                 if (!system.isAbstraction(messageToHandle.getToAbstractionId())) {
                     if (messageToHandle.getToAbstractionId().contains(".nnar[")) {
-                        //String registerAbstraction = Utilities.getNnarRegisterAbstraction(messageToHandle.getToAbstractionId());
-                        //appSystem.addAbstraction(new NnarRegister(registerAbstraction, appSystem));
+                        String registerAbstraction = Utilities.getRegisterAbstraction(messageToHandle.getToAbstractionId());
+                        system.addAbstraction(new Register(registerAbstraction, system));
                     } else if (messageToHandle.getToAbstractionId().contains(".uc[")) {
                         //String ucAbstraction = Utils.getUcAbstraction(message.getToAbstractionId());
                         //appSystem.addAbstraction(new Uc(ucAbstraction, appSystem));
                     }
 
-                    List<Abstraction> abstractions = system.getAbstractions();
 
-                    for (Abstraction abstraction: abstractions
-                         ) {
-                        try {
-                            abstraction.handleMessage(messageToHandle);
-                        }catch (IOException ex) {
-                            logger.info(String.format("%s abstraction could not process message %s", abstraction.getAbstractionId(), messageToHandle.getMessageUuid()));
-                        }
+                }
+                List<Abstraction> abstractions = system.getAbstractions();
+
+                for (Abstraction abstraction: abstractions
+                ) {
+                    try {
+                        abstraction.handleMessage(messageToHandle);
+                    }catch (IOException ex) {
+                        logger.info(String.format("%s abstraction could not process message %s", abstraction.getAbstractionId(), messageToHandle.getMessageUuid()));
                     }
                 }
             } catch (InterruptedException exception) {

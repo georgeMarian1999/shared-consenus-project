@@ -10,6 +10,7 @@ import org.main.projectbase.CommunicationProtocol;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,8 +43,8 @@ public class ApplicationSystem {
 
         // Adding the system abstractions
         abstractions.add(new App("app", this));
-        abstractions.add(new BestEffortBroadcast("app.beb", this));
         abstractions.add(new PerfectLink("app.pl", this));
+        abstractions.add(new BestEffortBroadcast("app.beb", this));
         abstractions.add(new PerfectLink("app.beb.pl", this));
     }
 
@@ -60,27 +61,17 @@ public class ApplicationSystem {
     }
 
     public boolean isAbstraction(String abstractionId) {
-        for (Abstraction abs: abstractions
-             ) {
-            if (abs.getAbstractionId().equals(abstractionId)) {
-                return true;
-            }
-        }
-        return false;
+        Optional<Abstraction> abstraction = abstractions.stream().filter(a -> a.getAbstractionId().equals(abstractionId)).findFirst();
+        return abstraction.isPresent();
     }
 
     public CommunicationProtocol.ProcessId getSenderProcessId(String host, int port) {
         Hub hub = process.getHub();
-        if (Objects.equals(hub.getAddress(), host) && hub.getPort() == port) {
+        if (hub.getAddress().equals(host) && hub.getPort() == port) {
             return hub.getProcessId();
         }
-        for (CommunicationProtocol.ProcessId processId: processIds
-             ) {
-            if (processId.getHost().equals(host) && processId.getPort() == port) {
-                return processId;
-            }
-        }
-        return null;
+        Optional<CommunicationProtocol.ProcessId> sender = processIds.stream().filter(p -> p.getHost().equals(host) && p.getPort() == port).findFirst();
+        return sender.orElse(null);
     }
 
     public String getId() {

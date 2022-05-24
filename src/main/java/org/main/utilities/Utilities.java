@@ -12,7 +12,11 @@ public class Utilities {
 
 
     public static String getParentAbstraction(String abstractionId) {
-        return abstractionId.substring(0, abstractionId.lastIndexOf("."));
+        int lastIndex = abstractionId.lastIndexOf(".");
+        if (lastIndex == -1) {
+            lastIndex = abstractionId.length();
+        }
+        return abstractionId.substring(0, lastIndex);
     }
 
     public static String getAbstractionIdNnarRegister(String abstractionId, String register) {
@@ -44,13 +48,7 @@ public class Utilities {
     }
 
     public static CommunicationProtocol.ProcessId findProcessId(List<CommunicationProtocol.ProcessId> processIds, int index, String owner) {
-        for (CommunicationProtocol.ProcessId processId: processIds
-             ) {
-            if (processId.getIndex() == index && processId.getOwner().equals(owner)) {
-                return processId;
-            }
-        }
-        return null;
+        return processIds.stream().filter(p -> p.getOwner().equals(owner) && p.getIndex() == index).findFirst().orElse(null);
     }
 }
 

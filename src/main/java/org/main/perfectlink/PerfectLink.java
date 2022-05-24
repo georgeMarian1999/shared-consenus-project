@@ -27,14 +27,14 @@ public class PerfectLink extends Abstraction {
             case NETWORK_MESSAGE:
                 if (message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REQUEST
                         && message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REPLY) {
-                    logger.info(String.format("%s%s: %s from %s to %s\n", Thread.currentThread().getName(), message.getType(), message.getFromAbstractionId(), message.getToAbstractionId()));
+                    //logger.info(String.format("%s: %s from %s to %s\n", Thread.currentThread().getName(), message.getType(), message.getFromAbstractionId(), message.getToAbstractionId()));
                 }
                 deliverNetworkMessage(message);
                 return "Message handled. Case NETWORK_MESSAGE";
             case PL_SEND:
                 if (message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REQUEST
                         && message.getNetworkMessage().getMessage().getType() != CommunicationProtocol.Message.Type.EPFD_INTERNAL_HEARTBEAT_REPLY) {
-                    logger.info(String.format("%s%s: %s from %s to %s\n", Thread.currentThread().getName(), message.getType(), message.getFromAbstractionId(), message.getToAbstractionId()));
+                    //logger.info(String.format("%s: %s from %s to %s\n", Thread.currentThread().getName(), message.getType(), message.getFromAbstractionId(), message.getToAbstractionId()));
                 }
                 sendNetworkMessage(message);
                 return "Message handled. Case PL_DELIVER";
@@ -65,30 +65,27 @@ public class PerfectLink extends Abstraction {
 
     private void deliverNetworkMessage(CommunicationProtocol.Message message) throws IOException{
         CommunicationProtocol.NetworkMessage networkMessage = message.getNetworkMessage();
-        CommunicationProtocol.ProcessId senderProcessId = system.getSenderProcessId(networkMessage.getSenderHost(), networkMessage.getSenderListeningPort());
+        CommunicationProtocol.ProcessId sender = system.getSenderProcessId(networkMessage.getSenderHost(), networkMessage.getSenderListeningPort());
         CommunicationProtocol.Message innerMessage = networkMessage.getMessage();
-
         CommunicationProtocol.PlDeliver plDeliver;
-        if (senderProcessId == null) {
-             plDeliver = CommunicationProtocol.PlDeliver.newBuilder()
-                    .setMessage(innerMessage)
-                    .build();
-        }
-        else {
+        if (sender == null) {
             plDeliver = CommunicationProtocol.PlDeliver.newBuilder()
                     .setMessage(innerMessage)
-                    .setSender(senderProcessId)
+                    .build();
+        } else {
+            plDeliver = CommunicationProtocol.PlDeliver.newBuilder()
+                    .setSender(sender)
+                    .setMessage(innerMessage)
                     .build();
         }
-
-        CommunicationProtocol.Message forwardMessage = CommunicationProtocol.Message.newBuilder()
+        CommunicationProtocol.Message messageToSend = CommunicationProtocol.Message.newBuilder()
                 .setType(CommunicationProtocol.Message.Type.PL_DELIVER)
                 .setPlDeliver(plDeliver)
                 .setMessageUuid(String.valueOf(UUID.randomUUID()))
                 .setToAbstractionId(Utilities.getParentAbstraction(message.getToAbstractionId()))
-                .setFromAbstractionId(abstractionId)
+                .setFromAbstractionId(this.abstractionId)
                 .setSystemId(system.getId())
                 .build();
-        system.addMessage(forwardMessage);
+        system.addMessage(messageToSend);
     }
 }
